@@ -1,7 +1,9 @@
 const router = require('express').Router();
 const {client} = require('../db');
+const {ObjectId} = require('mongodb');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
 
 const db = client.db('prepWork');
 const collection = db.collection('Users');
@@ -55,6 +57,111 @@ router.post('/login', async (req, res) => {
             status: false,
             error: 'User not found',
         });
+    }
+});
+
+router.post('/forgot-password', async (req, res) => {
+    const {email} = req.body;
+
+    //Mail Config
+    const transporter = nodemailer.createTransport({
+        service: `${process.env.EMAIL_SERVICE}`,
+        auth: {
+            user: `${process.env.EMAIL_USER}`,
+            pass: `${process.env.EMAIL_PASS}`
+        }
+    });
+
+    // Get User
+    const user = await collection.findOne({email: email});
+
+    if (user) {
+
+        // Generate Token
+        const secret = process.env.TOKEN_SECRET + user.password;
+        const payload = {
+            email: user.email,
+            id: user._id,
+        };
+
+        const token = jwt.sign(payload, secret, {expiresIn: '10m'});
+        const url = `http://localhost:3000/users/reset-password/${user._id}/${token}`;
+
+        var mailOptions = {
+            from: `PrepWork Support<${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: `PrepWork - Reset Your Password`,
+            html: `<p>
+            Please click on the link below to reset your password:
+            <br>
+            <a href="${url}">Reset Password</a>
+            <br><br>
+            If the link doesn't work, copy and paste the following link in your browser:
+            <br>
+            ${url}
+            </p>`
+        }
+
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                res.json({
+                    status: false,
+                    error: 'Email not sent',
+                });
+            } else {
+                res.json({
+                    status: true,
+                    message: 'Email sent',
+                });
+            }
+        });
+    } else {
+        res.json({
+            status: false,
+            error: 'User not found',
+        });
+    }
+});
+
+router.get('/reset-password/:id/:token', async (req, res) => {
+    const {id, token} = req.params;
+
+    const objectId = new ObjectId(`${id}`);
+    // Get User
+    const user = await collection.findOne({_id: objectId});
+
+    if(user) {
+        const secret = process.env.TOKEN_SECRET + user.password;
+        try {
+            const payload = jwt.verify(token, secret);
+            res.render('reset-password', {id: id, token: token, email: user.email});
+        } catch (e) {
+            console.log(e)
+            res.status(400).send('Invalid Link');
+        }
+    } else {
+
+    }
+});
+
+router.post('/reset-password/:id/:token', async (req, res) => {
+    const { id, token } = req.params;
+    const { password } = req.body;
+
+    // Get User
+    const user = await collection.findOne({_id: new ObjectId(`${id}`)});
+
+    if (user) {
+        const secret = process.env.TOKEN_SECRET + user.password;
+        try {
+            const payload = jwt.verify(token, secret);
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const result = await collection.updateOne({_id: new ObjectId(`${id}`)}, {$set: {password: hashedPassword}});
+            res.render('reset-password-status', {status: true})
+        } catch (e) {
+            console.log(e)
+            res.render('reset-password-status', {status: false})
+        }
     }
 });
 
