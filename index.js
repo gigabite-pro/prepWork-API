@@ -1,18 +1,22 @@
 const express = require('express');
 const app = express();
-const {client} = require('./db');
+const cors = require('cors');
 require('dotenv').config();
+const { isAuthorized } = require('./config/isAuthorized');
 
 const PORT = process.env.PORT || 3000;
 
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({extended: true}));
+
+// Routes
+app.use('/users', require('./routes/users'));
+app.use('/answers', isAuthorized, require('./routes/answers'));
+
 app.get('/', async (req, res) => {
-    // const db = client.db('prepWork');
-    // const collection1 = db.collection('Users');
-    
-    // const user = {name: "Chintu", age: 20};
-    // const result = await collection1.insertOne(user);
-    // console.log(result);
-    res.send("done")
+    res.send("working")
 });
 
 app.listen(PORT, () => {
