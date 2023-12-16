@@ -18,8 +18,15 @@ router.post('/register', async (req, res) => {
     const user = {email, username, password: hashedPassword};
     const result = await collection.insertOne(user);
 
+    if (result.insertedCount === 0) {
+        res.json({
+            status: false,
+            error: 'Error creating user',
+        });
+    }
+
     // Create and assign a token
-    const token = jwt.sign({_id: result.insertedId}, process.env.TOKEN_SECRET, {expiresIn: '10h'});
+    const token = jwt.sign({_id: result.insertedId}, process.env.TOKEN_SECRET, {expiresIn: '2h'});
     res.json({
         status: true,
         token: token,
@@ -41,7 +48,7 @@ router.post('/login', async (req, res) => {
         const validPassword = await bcrypt.compare(password, user.password);
         if (validPassword) {
             // Create and assign a token
-            const token = jwt.sign({_id: user._id}, process.env.TOKEN_SECRET, {expiresIn: '10h'});
+            const token = jwt.sign({_id: user._id}, process.env.TOKEN_SECRET, {expiresIn: '2h'});
             res.json({
                 status: true,
                 token: token,
@@ -49,13 +56,30 @@ router.post('/login', async (req, res) => {
         } else {
             res.json({
                 status: false,
-                error: 'Invalid password',
+                error: 'Incorrect password',
             });
         }
     } else {
         res.json({
             status: false,
             error: 'User not found',
+        });
+    }
+});
+
+router.post('/verify', async (req, res) => {
+    const {token} = req.body;
+
+    try {
+        const payload = jwt.verify(token, process.env.TOKEN_SECRET);
+        res.json({
+            status: true,
+            message: 'Token is valid',
+        });
+    } catch (e) {
+        res.json({
+            status: false,
+            error: 'Invalid token',
         });
     }
 });
@@ -106,7 +130,7 @@ router.post('/forgot-password', async (req, res) => {
             if (error) {
                 res.json({
                     status: false,
-                    error: 'Email not sent',
+                    error: 'Error sending email',
                 });
             } else {
                 res.json({
@@ -137,7 +161,7 @@ router.get('/reset-password/:id/:token', async (req, res) => {
             res.render('reset-password', {id: id, token: token, email: user.email});
         } catch (e) {
             console.log(e)
-            res.status(400).send('Invalid Link');
+            res.render('reset-password-status', {status: 'invalid'})
         }
     } else {
 
@@ -157,10 +181,13 @@ router.post('/reset-password/:id/:token', async (req, res) => {
             const payload = jwt.verify(token, secret);
             const hashedPassword = await bcrypt.hash(password, 10);
             const result = await collection.updateOne({_id: new ObjectId(`${id}`)}, {$set: {password: hashedPassword}});
-            res.render('reset-password-status', {status: true})
+            if (result.modifiedCount === 0) {
+                res.render('reset-password-status', {status: 'error'})
+            }
+            res.render('reset-password-status', {status: 'success'})
         } catch (e) {
             console.log(e)
-            res.render('reset-password-status', {status: false})
+            res.render('reset-password-status', {status: 'error'})
         }
     }
 });
