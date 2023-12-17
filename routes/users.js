@@ -4,9 +4,12 @@ const {ObjectId} = require('mongodb');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 const db = client.db('prepWork');
 const collection = db.collection('Users');
+
+const HOST = process.env.HOST || 'http://localhost:3000';
 
 router.post('/register', async (req, res) => {
     const {email, username, password} = req.body;
@@ -110,7 +113,7 @@ router.post('/forgot-password', async (req, res) => {
         };
 
         const token = jwt.sign(payload, secret, {expiresIn: '10m'});
-        const url = `http://localhost:3000/users/reset-password/${user._id}/${token}`;
+        const url = `${HOST}/users/reset-password/${user._id}/${token}`;
 
         var mailOptions = {
             from: `PrepWork Support<${process.env.EMAIL_USER}>`,
