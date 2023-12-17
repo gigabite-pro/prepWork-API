@@ -137,6 +137,8 @@ router.post('/forgot-password', async (req, res) => {
             to: email,
             subject: `PrepWork - Reset Your Password`,
             html: `<p>
+            <h3 style="color:red">The link is valid only for 10 minutes.</h3>
+            <br><br>
             Please click on the link below to reset your password:
             <br>
             <a href="${url}">Reset Password</a>
@@ -144,8 +146,6 @@ router.post('/forgot-password', async (req, res) => {
             If the link doesn't work, copy and paste the following link in your browser:
             <br>
             ${url}
-            <br><br>
-            <h3 style="color:red">The link is valid only for 10 minutes.</h3>
             </p>`
         }
 
