@@ -17,8 +17,25 @@ router.post('/register', async (req, res) => {
     // Hash Password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const checkUser = await collection.findOne({email: email});
+    if (checkUser) {
+        res.json({
+            status: false,
+            error: 'Email already exists',
+        });
+    }
+
+    checkUser = await collection.findOne({username: username});
+    if (checkUser) {
+        res.json({
+            status: false,
+            error: 'Username already exists',
+        });
+    }
+
     // Create User
     const user = {email, username, password: hashedPassword};
+
     const result = await collection.insertOne(user);
 
     if (result.insertedCount === 0) {
