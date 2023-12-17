@@ -19,7 +19,7 @@ router.post('/register', async (req, res) => {
 
     let checkUser = await collection.findOne({email: email});
     if (checkUser) {
-        res.json({
+        return res.json({
             status: false,
             error: 'Email already exists',
         });
@@ -27,7 +27,7 @@ router.post('/register', async (req, res) => {
 
     checkUser = await collection.findOne({username: username});
     if (checkUser) {
-        res.json({
+        return res.json({
             status: false,
             error: 'Username already exists',
         });
@@ -39,7 +39,7 @@ router.post('/register', async (req, res) => {
     const result = await collection.insertOne(user);
 
     if (result.insertedCount === 0) {
-        res.json({
+        return res.json({
             status: false,
             error: 'Error creating user',
         });
@@ -47,7 +47,7 @@ router.post('/register', async (req, res) => {
 
     // Create and assign a token
     const token = jwt.sign({_id: result.insertedId}, process.env.TOKEN_SECRET, {expiresIn: '2h'});
-    res.json({
+    return res.json({
         status: true,
         token: token,
     });
@@ -69,18 +69,18 @@ router.post('/login', async (req, res) => {
         if (validPassword) {
             // Create and assign a token
             const token = jwt.sign({_id: user._id}, process.env.TOKEN_SECRET, {expiresIn: '2h'});
-            res.json({
+            return res.json({
                 status: true,
                 token: token,
             });
         } else {
-            res.json({
+            return res.json({
                 status: false,
                 error: 'Incorrect password',
             });
         }
     } else {
-        res.json({
+        return res.json({
             status: false,
             error: 'User not found',
         });
@@ -92,13 +92,13 @@ router.post('/verify', async (req, res) => {
 
     try {
         const payload = jwt.verify(token, process.env.TOKEN_SECRET);
-        res.json({
+        return res.json({
             status: true,
             message: 'Token is valid',
         });
     } catch (e) {
         console.log(e);
-        res.json({
+        return res.json({
             status: false,
             error: 'Invalid token',
         });
@@ -151,19 +151,19 @@ router.post('/forgot-password', async (req, res) => {
 
         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
-                res.json({
+                return res.json({
                     status: false,
                     error: 'Error sending email',
                 });
             } else {
-                res.json({
+                return res.json({
                     status: true,
                     message: 'Email sent',
                 });
             }
         });
     } else {
-        res.json({
+        return res.json({
             status: false,
             error: 'User not found',
         });
