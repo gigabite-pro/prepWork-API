@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getStorage, getDownloadURL } = require('firebase-admin/storage');
 const {client} = require('../db');
+const {ObjectId} = require('mongodb');
 
 const db = client.db('prepWork');
 const collection = db.collection('Answers');
@@ -18,6 +19,18 @@ const bucket = getStorage().bucket();
 router.post('/upload', async (req, res) => {
     const { courseNumber, wwNumber, qNumber, qString, file } = req.body;
     let answers = req.body.answers;
+    let userId = new ObjectId(`${req.user._id}`);
+
+    const user = await db.collection('Users').findOne({_id: userId});
+
+    if (!user) {
+        return res.json({
+            status: false,
+            error: 'User not found',
+        });
+    }
+
+    answers = [user.username, ...answers]
 
     if (!courseNumber || !wwNumber || !qNumber || !qString || !answers || !file) {
         return res.json({
@@ -28,7 +41,7 @@ router.post('/upload', async (req, res) => {
 
     const question = await collection.findOne({qString});
 
-    if (question && question.answers.some(arr => arr.length === answers.length && arr.every((value, index) => value === answers[index]))) {
+    if (question && question.answers.some(arr => arr.length === answers.length && arr.slice(1).every((value, index) => value === answers.slice(1)[index]))) {
         return res.json({
             status: false,
             error: 'Question already exists',

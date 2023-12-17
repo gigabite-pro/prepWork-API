@@ -124,6 +124,8 @@ router.post('/forgot-password', async (req, res) => {
             If the link doesn't work, copy and paste the following link in your browser:
             <br>
             ${url}
+            <br><br>
+            <h6 style="color:red">The link is valid only for 10 minutes.</h6>
             </p>`
         }
 
