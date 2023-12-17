@@ -7,7 +7,7 @@ const { isAuthorized } = require('./config/isAuthorized');
 const PORT = process.env.PORT || 3000;
 
 const corsOptions = {
-    origin: [process.env.EXTENSION_ORIGIN],
+    origin: [process.env.EXTENSION_ORIGIN, process.env.WEBWORK_ORIGIN],
 };
 
 // Middleware
