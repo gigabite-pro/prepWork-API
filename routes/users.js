@@ -77,6 +77,7 @@ router.post('/verify', async (req, res) => {
             message: 'Token is valid',
         });
     } catch (e) {
+        console.log(e);
         res.json({
             status: false,
             error: 'Invalid token',

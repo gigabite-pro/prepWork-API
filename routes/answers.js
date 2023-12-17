@@ -19,6 +19,13 @@ router.post('/upload', async (req, res) => {
     const { courseNumber, wwNumber, qNumber, qString, file } = req.body;
     let answers = req.body.answers;
 
+    if (!courseNumber || !wwNumber || !qNumber || !qString || !answers || !file) {
+        return res.json({
+            status: false,
+            error: 'Missing required fields',
+        });
+    }
+
     const question = await collection.findOne({qString});
 
     if (question && question.answers.some(arr => arr.length === answers.length && arr.every((value, index) => value === answers[index]))) {
@@ -26,6 +33,20 @@ router.post('/upload', async (req, res) => {
             status: false,
             error: 'Question already exists',
         });
+    } else if (question) {
+        const result = await collection.updateOne({qString}, {$push: {answers}});
+
+        if (result.modifiedCount === 0) {
+            return res.json({
+                status: false,
+                error: 'Error creating answer',
+            });
+        } else {
+            return res.json({
+                status: true,
+                message: 'Answer updated',
+            });
+        }
     }
 
     answers = [answers];
@@ -46,6 +67,10 @@ router.post('/upload', async (req, res) => {
 
     blobStream.on('error', (error) => {
         console.error('Error uploading image:', error);
+        return res.json({
+            status: false,
+            error: 'Error uploading image',
+        });
     });
 
     blobStream.on('finish', async () => {
@@ -69,14 +94,48 @@ router.post('/upload', async (req, res) => {
         }
 
         res.json({
-            status: 'success',
-            data: {
-                url: publicUrl,
-            },
+            status: true,
+            message: 'Answer created',
         });
     });
 
     blobStream.end(imageBuffer);
+});
+
+router.get('/get', async (req, res) => {
+    const { courseNumber, wwNumber, qNumber } = req.query;
+
+    if (!courseNumber || !wwNumber || !qNumber) {
+        return res.json({
+            status: false,
+            error: 'Missing required fields',
+        });
+    }
+
+    const questions = collection.find({
+        courseNumber,
+        wwNumber: parseInt(wwNumber),
+        qNumber: parseInt(qNumber),
+    });
+
+    if (await collection.countDocuments({courseNumber,wwNumber: parseInt(wwNumber), qNumber: parseInt(qNumber)}) === 0) {
+        return res.json({
+            status: false,
+            error: 'No answers found',
+        });
+    }
+
+    const allQuestions = [];
+
+    for await (const question of questions) {
+        allQuestions.push(question);
+    }
+
+    res.json({
+        status: true,
+        allQuestions,
+    });
+
 });
 
 module.exports = router;
