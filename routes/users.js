@@ -145,7 +145,7 @@ router.post('/forgot-password', async (req, res) => {
             <br>
             ${url}
             <br><br>
-            <h6 style="color:red">The link is valid only for 10 minutes.</h6>
+            <h3 style="color:red">The link is valid only for 10 minutes.</h3>
             </p>`
         }
 
